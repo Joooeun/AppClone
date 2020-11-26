@@ -1,11 +1,9 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { SafeAreaView, Text, View } from 'react-native';
 import { UserContext } from '~/Context/User';
 import styled from 'styled-components/native';
-import { ScrollView } from 'react-native-gesture-handler';
 import MapContent from '~/Components/Map';
-import Geolocation from 'react-native-geolocation-service';
+import { View } from 'react-native';
 
 type NavigationProp = StackNavigationProp<MangoNaviParamList, 'MangoHome'>;
 
@@ -27,22 +25,11 @@ const StyleText = styled.Text`
     color:#fff;
     font-size:20px;
 `
-
 const index = ({ navigation }: Props) => {
     const { logout } = useContext<IUserContext>(UserContext);
-    const [coord, setCoord] = useState({})
-
-    Geolocation.getCurrentPosition(
-        position => {
-            setCoord(position.coords);
-        },
-        error => {
-            console.log(error)
-        }
-    )
 
     return (
-        <MapContent coord = {coord} />
+        <MapContent />
         // <SafeAreaView>
         //     <MapContent />
         //     <StyleButton onPress={() => logout()}><StyleText>로그아웃</StyleText></StyleButton>
