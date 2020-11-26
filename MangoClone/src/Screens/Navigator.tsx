@@ -23,7 +23,9 @@ const LoginNavigator = () => {
                 options={{
                     title: "MangoIntro",
                     headerTransparent: true,
-                    headerTintColor: '#E70915',
+                    headerStyle: {
+                        height:20
+                    },
                     headerTitleStyle: {
                         fontWeight: 'bold',
                     },
@@ -42,9 +44,12 @@ const PermissionNavigator = () => {
                 options={{
                     title: "MangoPermission",
                     headerTransparent: true,
-                    headerTintColor: '#E70915',
+                    headerStyle: {
+                        height:20
+                    },
                     headerTitleStyle: {
                         fontWeight: 'bold',
+                        textAlign:'right'
                     },
                 }}
             />
@@ -60,13 +65,13 @@ const MangoNavigator = () => {
                 component={MangoHome}
                 options={{
                     title: "MangoHome",
-                    headerTintColor: '#E70915',
+                    headerTransparent: true,
                     headerStyle: {
-                        backgroundColor: '#141414',
-                        borderBottomWidth: 0,
+                        height:20
                     },
                     headerTitleStyle: {
                         fontWeight: 'bold',
+                        textAlign:'right'
                     },
                 }}
             />
@@ -75,13 +80,13 @@ const MangoNavigator = () => {
                 component={MangoDetail}
                 options={{
                     title: "MangoHome",
-                    headerTintColor: '#E70915',
+                    headerTransparent: true,
                     headerStyle: {
-                        backgroundColor: '#141414',
-                        borderBottomWidth: 0,
+                        height:20
                     },
                     headerTitleStyle: {
                         fontWeight: 'bold',
+                        textAlign:'right'
                     },
                 }}
             />

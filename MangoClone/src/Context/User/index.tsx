@@ -33,8 +33,8 @@ const UserContextProvider = ({ children }: Props) => {
     };
 
     const logout = (): void => {
+        setUserInfo(undefined); 
         AsyncStorage.removeItem('token');
-        setUserInfo(undefined);
     };
 
     const getUserInfo = (): void => {
