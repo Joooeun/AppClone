@@ -64,7 +64,7 @@ const MangoNavigator = () => {
                 name="MangoHome"
                 component={MangoHome}
                 options={{
-                    title: "MangoHome",
+                    title: "",
                     headerTransparent: true,
                     headerStyle: {
                         height:20
