@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 
 const Container =styled.View`
     flex:1;
-    background-color:#141414;
+    background-color:#ffffff;
     align-items:center;
     justify-content:center;
 `;
@@ -12,7 +12,7 @@ const Container =styled.View`
 const Loading = () => {
     return (
         <Container>
-            <ActivityIndicator color="#E70915" size="large"/>
+            <ActivityIndicator color="#ff8800" size="large"/>
         </Container>
     );
 };

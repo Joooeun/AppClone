@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Button, Dimensions, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Circle, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import Geolocation from 'react-native-geolocation-service';
-import { FlatList, ScrollView, TouchableOpacity } from "react-native-gesture-handler";
-import markerImg from '~/res/images/marker.png';
+import { ScrollView, TouchableOpacity } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 
 const { width, height } = Dimensions.get('window');
@@ -14,20 +13,75 @@ const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 const getPosition = () => {
-  Geolocation.getCurrentPosition(
-    position => {
-      LATITUDE = position.coords.latitude
-      LONGITUDE = position.coords.longitude
-    },
-    error => {
-      console.log(error)
-    }
-  )
-}
-getPosition();
+  return new Promise((resolve, reject) => {
 
-const MapContent = () => {
-  //getPosition();
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        LATITUDE = latitude;
+        LONGITUDE = longitude;
+        console.log('좌표설정');
+        resolve()
+      },
+      error => {
+        console.log(error);
+        reject()
+      }
+    )
+  })
+};
+
+getPosition();
+const MapContent = ({ markers, getMarkers, dist, toDetail,kind }) => {
+
+  useEffect(() => {
+    getPosition().then(() => {
+      getMarkers(LATITUDE, LONGITUDE, dist)
+    }).catch((error) => {
+      console.log(error)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (markers.length > 0) {
+      mapRef.current.animateToRegion({
+        latitude: Number(markers[0].latitude),
+        longitude: Number(markers[0].longitude),
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA,
+      }, 300)
+      clickMarker(0)
+      setBottomview('list')
+    } else {
+      setBottomview('search')
+    }
+
+  }, [markers])
+
+  useEffect(() => {
+    searchStoreMyPosition()
+  }, [dist])
+
+  const searchStoreMyPosition = () => {
+    getPosition().then(() => {
+      setCoord({
+        ...coord,
+        searchcoord: {
+          latitude: LATITUDE,
+          longitude: LONGITUDE,
+        },
+        circlecoord: {
+          latitude: LATITUDE,
+          longitude: LONGITUDE,
+        },
+        serachradius: dist
+      })
+      getMarkers(LATITUDE, LONGITUDE, dist)
+      setBottomview('list')
+    }).catch((error) => {
+      console.log(error)
+    })
+  }
 
   const mapRef = useRef();
   const scrollRef = useRef();
@@ -45,23 +99,15 @@ const MapContent = () => {
       latitude: LATITUDE,
       longitude: LONGITUDE,
     },
-    serachradius: 300
+    circlecoord: {
+      latitude: LATITUDE,
+      longitude: LONGITUDE,
+    },
+    serachradius: dist,
+    focusIndex: 0,
+    searchKind : kind,
+    serachSort : 'rating'
   })
-
-  const [markers, setMarkers] = useState([
-    {
-      latitude: coord.currentcoord.latitude + 0.001,
-      longitude: coord.currentcoord.longitude + 0.001,
-    },
-    {
-      latitude: coord.currentcoord.latitude + 0.002,
-      longitude: coord.currentcoord.longitude + 0.0005,
-    },
-    {
-      latitude: coord.currentcoord.latitude,
-      longitude: coord.currentcoord.longitude,
-    },
-  ])
 
   const centerMap = () => {
     mapRef.current.animateToRegion(coord.currentcoord, 500);
@@ -69,8 +115,14 @@ const MapContent = () => {
   }
 
   const searchStore = () => {
-    setBottomview('list')
-
+    getMarkers(coord.searchcoord.latitude, coord.searchcoord.longitude, coord.serachradius)
+    setCoord({
+      ...coord,
+      circlecoord: {
+        latitude: coord.searchcoord.latitude,
+        longitude: coord.searchcoord.longitude,
+      }
+    })
   }
 
   const setSearchcoord = (region) => {
@@ -81,23 +133,33 @@ const MapContent = () => {
         longitude: region.longitude,
       }
     })
-    setBottomview('search')
+    setBottomview(bottomview == !'list' ? 'search' : bottomview)
   }
 
-
-  const test = (event) => {
-    const currentPage =  Math.floor(event.nativeEvent.contentOffset.x / (width-85));
-    console.log(markers[currentPage])
+  const scrollto = (event) => {
+    const currentPage = Math.floor(event.nativeEvent.contentOffset.x / (width - 90));
 
     mapRef.current.animateToRegion({
-      latitude: markers[currentPage].latitude,
-      longitude: markers[currentPage].longitude,
+      latitude: Number(markers[currentPage].latitude),
+      longitude: Number(markers[currentPage].longitude),
       latitudeDelta: LATITUDE_DELTA,
       longitudeDelta: LONGITUDE_DELTA,
-    },
-    300)
-    
+    }, 300)
 
+    setCoord({
+      ...coord,
+      focusIndex: currentPage
+    })
+
+  }
+
+  const clickMarker = (index) => {
+    setBottomview('list')
+    scrollRef.current.getScrollResponder().scrollResponderScrollTo({ x: (width - 80) * index, y: 0, animated: true });
+    setCoord({
+      ...coord,
+      focusIndex: index
+    })
   }
   return (
     <View style={styles.container}>
@@ -107,56 +169,76 @@ const MapContent = () => {
         provider={PROVIDER_GOOGLE}
         initialRegion={coord.currentcoord}
         showsUserLocation={true}
-        onRegionChange={() => setBottomview('')}
+        onPanDrag={() => setBottomview('')}
         onRegionChangeComplete={setSearchcoord.bind(this)}
       >
-        {markers.map((marker, index) =>
+        {markers.length > 0 && markers.map((marker, index) =>
           <Marker
             key={index}
-            coordinate={marker}
-            image={markerImg}
+            style={{ opacity: index === coord.focusIndex ? 1 : 0.5 }}
+            coordinate={{ latitude: Number(marker.latitude), longitude: Number(marker.longitude) }}
+            //image={index === coord.focusIndex ? markerImg2 :markerImg2}
+            onPress={() => clickMarker(index)}
           />
         )}
-
-        <Circle
-          center={coord.currentcoord}
-          radius={coord.serachradius}
-          fillColor="rgba(255, 162, 0, 0.07)"
-          strokeColor="rgba(255, 162, 0,1)"
-          zIndex={2}
-          strokeWidth={1}
-        />
+        {
+          bottomview === 'list' &&
+          <Circle
+            center={coord.circlecoord}
+            radius={coord.serachradius}
+            fillColor="rgba(255, 162, 0, 0.07)"
+            strokeColor="rgba(255, 162, 0,1)"
+            zIndex={2}
+            strokeWidth={1}
+          />
+        }
       </MapView>
+      <ScrollView
+        ref={scrollRef}
+        style={[styles.storeview, { opacity: bottomview === 'list' ? 1 : 0 }]}
+        horizontal={true}
+        pagingEnabled={true}
+        onMomentumScrollEnd={scrollto}
 
-      {
-        bottomview === 'list' ?
-          <ScrollView
-            ref={scrollRef}
-            style={styles.storeview}
-            horizontal={true}
-            pagingEnabled={true}
-            onMomentumScrollEnd={test}
+      >
+        {markers.map((marker, index) =>
+          <TouchableOpacity
+            key={index}
+            activeOpacity={0.8}
+            onPress={() => toDetail(marker)}
           >
-            {markers.map((marker, index) =>
-              <Animated.View key={index} style={styles.storecard}>
-                <Text>{index}</Text>
-              </Animated.View>
+            <Animated.View style={styles.storecard}>
 
-            )}
+              <Image
+                source={{ uri: marker.picture }}
+                style={{ height: '100%', aspectRatio: 1, resizeMode: 'cover' }}
+              />
+              <View style={{ padding: 10, flex: 1 }}>
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={{ fontSize: 18, width:160 }} >{index + 1}. {marker.name}</Text>
+                  <Text style={{ color: '#ff8800', fontSize: 23, marginTop: -5 }}>{marker.rating}</Text>
+                </View>
+                <Text style={{ color: '#6d6d6d', marginTop:10 }}>{marker.address}</Text>
+                <Text style={{ color: '#969696', fontSize:11 }}>{marker.distance}m</Text>
+              </View>
+            </Animated.View>
+          </TouchableOpacity>
 
-          </ScrollView>
-          : bottomview === 'search' &&
-          <View
-            style={[styles.bubble, styles.button]}
-          >
+        )}
+
+      </ScrollView>
+      <View
+        style={[styles.bubble, styles.button, { opacity: bottomview === 'search' ? 1 : 0 }]}
+      >
+        {
+          markers.length > 0 ?
             <Text style={styles.text} onPress={() => searchStore()}> 이 지역 검색하기 </Text>
-          </View>
-      }
-
-
+            :
+            <Text style={styles.text} onPress={() => searchStoreMyPosition()}> 내 위치에서 검색하기 </Text>
+        }
+      </View>
 
     </View>
-
   )
 };
 export default MapContent;
@@ -176,17 +258,18 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     position: 'absolute',
     flexDirection: 'row',
-    marginLeft: 40,
+    marginLeft: 45,
     overflow: 'visible',
   },
   storecard: {
-    width: width - 80,
+    width: width - 90,
     aspectRatio: 3,
     backgroundColor: '#fff',
     marginRight: 10,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#b4b4b4',
+    flexDirection: 'row'
   },
   bubble: {
     backgroundColor: 'rgba(237, 135, 19, 0.8)',

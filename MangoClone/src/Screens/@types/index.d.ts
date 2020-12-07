@@ -5,4 +5,6 @@ type LoginNaviParamList ={
 type MangoNaviParamList ={
     MangoHome:undefined;
     MangoDetail:undefined;
+    Filter:any;
+    Sort:any;
 };

@@ -23,8 +23,8 @@ const UserContextProvider = ({ children }: Props) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [geo, setGeo] = useState<boolean>(false);
 
-    const login = (first: boolean): void => {
-        AsyncStorage.setItem('token', 'save your token').then(() => {
+    const login = async (first: boolean) => {
+       await AsyncStorage.setItem('token', 'save your token').then(() => {
             setUserInfo({
                 first: false,
             });
@@ -37,8 +37,8 @@ const UserContextProvider = ({ children }: Props) => {
         AsyncStorage.removeItem('token');
     };
 
-    const getUserInfo = (): void => {
-        AsyncStorage.getItem('token')
+    const getUserInfo = async () => {
+        await AsyncStorage.getItem('token')
             .then(value => {
                 if (value) {
                     setUserInfo({
